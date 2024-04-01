@@ -5,26 +5,24 @@ int main(){
 
     char symbols[BASE+1] = {};
     Cond cond0;
-    Status status0 = { 0, 0, ~0 };
+    Status status0 = { 0, 0, 0 };
     char sequence[BASE+1];
     int ans = 0;
     
     printf("#define BASE %d\n#define LEADING_ZERO %d\n", BASE, LEADING_ZERO);
-    printf("Enter the pseudoku, with the last line being the sum of the previous lines:\n");
     parse(symbols, &cond0);
     printf("%s\n", symbols);
     permute(&cond0, &status0, sequence, &ans);
     switch (ans){
         case 0: 
-            printf("No solution found.");
+            printf("No solution found.\n");
             break;
         case 1:
-            printf("Found 1 solution.");
+            printf("Found 1 solution.\n");
             break;
         default:
-            printf("Found %d solutions.", ans);
+            printf("Found %d solutions.\n", ans);
     }
-    putchar('\n');
 
     return 0;
 }
@@ -36,31 +34,55 @@ void parse( char* sym, Cond* cptr ){
     int delta[BASE];
     cptr->ld = 0;
 
+    printf("Enter the summands of the pseudoku:\n");
+    ch = getchar_no_enter();
+    do {
+        parse_line(sym, delta, ch, &cptr->ld);
+        for (i=0; i<BASE; i++)
+            cptr->co[i] += delta[i];
+    } while ((ch = getchar()) != '\n');
+
+    printf("Enter the sum of the pseudoku:\n");
+    ch = getchar_no_enter();
+    parse_line(sym, delta, ch, &cptr->ld);
+    for (i=0; i<BASE; i++)
+        cptr->co[i] -= delta[i];
+
+    cptr->num = i;
+
+    return;
+}
+
+void parse_line( char* sym, int* co, char initial, bitmap* ld){
+
+    char ch;
+    int i;
+
+    for (int j=0; j<BASE; j++)
+        co[j] = 0;
+
+    for (i=0; i<BASE && sym[i] && sym[i]!=initial; i++)
+        continue;
+    if (i == BASE){
+        fprintf(stderr, "Error: Maximum number of symbols exceeded (%d).\n", BASE);
+        exit(EXIT_FAILURE);
+    }
+    sym[i] = initial;
+    co[i] ++;
+    *ld |= 1<<i;
+
     while ((ch = getchar()) != '\n'){
+        for (int j=0; j<BASE; j++)
+            co[j] *= BASE;
         for (i=0; i<BASE && sym[i] && sym[i]!=ch; i++)
             continue;
-        cptr->ld += 1<<i;
-        for (int j=0; j<BASE; j++)
-            delta[j] = 0;
-        do{
-            for (int j=0; j<BASE; j++)
-                delta[j] *= BASE;
-            for (i=0; i<BASE && sym[i] && sym[i]!=ch; i++)
-                continue;
-            if (i == BASE){
-                fprintf(stdout, "Exceeded maximum number of sym: %d\n", BASE);
-                exit(EXIT_FAILURE);
-            }
-            sym[i] = ch;
-            delta[i] ++;
-        } while ((ch = getchar()) != '\n');
-        for (int j=0; j<BASE; j++){
-            cptr->co[j] += delta[j];
+        if (i == BASE){
+            fprintf(stderr, "Error: Maximum number of symbols exceeded (%d).\n", BASE);
+            exit(EXIT_FAILURE);
         }
+        sym[i] = ch;
+        co[i] ++;
     }
-    for (i=0; sym[i]; i++)
-        cptr->co[i] -= 2*delta[i];
-    cptr->num = i;
 
     return;
 }
@@ -75,29 +97,43 @@ void permute( Cond* cptr, Status* sptr, char* seq, int* ans ){
         return;
     }
 
-    uint i = 0;
+    int i = 0;
     if ( !LEADING_ZERO && (cptr->ld >> sptr->pos & 1) )
         i = 1;
 
     Status prev = *sptr;
-    for (; i<BASE; i++)
-        if ( sptr->bitmap >> i & 1 ){
-            seq[sptr->pos] = num2char(i);
-            sptr->bitmap -= 1<<i;
-            sptr->sum += cptr->co[sptr->pos] * i;
-            sptr->pos ++;
-            permute( cptr, sptr, seq, ans );
-            *sptr = prev;
-        }
+    for (; i<BASE; i++){
+        if ( sptr->usage >> i & 1 )
+            continue;
+        seq[sptr->pos] = num2char(i);
+        sptr->usage |= 1<<i;
+        sptr->sum += cptr->co[sptr->pos] * i;
+        sptr->pos ++;
+        permute( cptr, sptr, seq, ans );
+        *sptr = prev;
+    }
 
     return;
 }
 
 char num2char( int n ){
+
     if (n < 10)
         return n+48;
     else if (n < 36)
         return n+55;
     else
         return 32;
+
+}
+
+char getchar_no_enter( void ){
+
+    char ch = getchar();
+    if (ch == '\n'){
+        fprintf(stderr, "Error: Empty line.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return ch;
 }

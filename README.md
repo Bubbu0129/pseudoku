@@ -23,3 +23,5 @@ Execute `gcc main.c -o main`.
 The notion to write this solver stems from a failed attempt to solve a billboard puzzle for the International Day of Mathematics by hand. Simpler versions of such puzzles can also be seen in junior mathematical competitions.
 
 The program contains much minor optimization, which is indeed unnecessary in such a simple program. They are mostly for demonstration purposes.
+
+The source code **contains no comments**.
