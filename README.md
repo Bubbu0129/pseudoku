@@ -14,7 +14,7 @@ Recompile after altering `config.h`.
 
 ## Compilation
 
-Execute `gcc main.c -o main`.
+Execute `gcc main.c -o pseudoku`.
 
 ## Sidenote
 
